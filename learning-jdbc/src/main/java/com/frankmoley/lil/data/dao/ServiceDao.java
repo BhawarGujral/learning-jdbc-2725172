@@ -4,6 +4,7 @@ import com.frankmoley.lil.data.entity.Service;
 import com.frankmoley.lil.data.util.DatabaseUtils;
 
 import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -13,10 +14,13 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Logger;
 
+import javax.xml.crypto.Data;
+
 public class ServiceDao implements Dao<Service, UUID> {
   private static final Logger LOGGER = Logger.getLogger(ServiceDao.class.getName());
 
   private static final String GET_ALL = "select service_id,name,price from wisdom.services";
+  private static final String GET_BY_ID = "select service_id,name,price from wisdom.services where service_id = ?";
 
   @Override
   public Service create(Service entity) {
@@ -45,7 +49,17 @@ public class ServiceDao implements Dao<Service, UUID> {
 
   @Override
   public Optional<Service> getOne(UUID id) {
-    // TODO Auto-generated method stub
+    try (PreparedStatement stmt = DatabaseUtils.getConnection().prepareStatement(GET_BY_ID)) {
+      stmt.setObject(1, id);
+      ResultSet rs = stmt.executeQuery();
+      List<Service> services = this.processResultSet(rs);
+      if (services.isEmpty()) {
+        return Optional.empty();
+      }
+      return Optional.of(services.get(0));
+    } catch (SQLException e) {
+      DatabaseUtils.handleSqlException("ServiceDao.getOne", e, LOGGER);
+    }
     return Optional.empty();
   }
 
